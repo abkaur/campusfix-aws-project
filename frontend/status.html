@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Check Request Status - CampusFix</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f3f4f6; margin: 0; }
+    header { background: #2563eb; color: #fff; padding: 16px 24px; }
+    main {
+      max-width: 600px; margin: 40px auto; background: #fff;
+      padding: 24px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    label { display: block; margin-top: 12px; }
+    input { width: 100%; padding: 8px; margin-top: 4px;
+      border: 1px solid #d1d5db; border-radius: 4px; }
+    button { margin-top: 16px; padding: 10px 16px; border: none;
+      background: #2563eb; color: #fff; border-radius: 4px; cursor: pointer; }
+    .result { margin-top: 16px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>CampusFix</h1>
+</header>
+
+<main>
+  <h2>Check Request Status</h2>
+
+  <label>
+    Enter Your Request ID
+    <input type="text" id="issueIdInput" />
+  </label>
+  <button id="checkButton">Check Status</button>
+
+  <div class="result" id="result"></div>
+
+  <p><a href="index.html">← Back to Home</a></p>
+</main>
+
+<script>
+  const API_BASE_URL = "https://your-api-id.execute-api.region.amazonaws.com/prod";
+
+  const input = document.getElementById("issueIdInput");
+  const resultDiv = document.getElementById("result");
+  const button = document.getElementById("checkButton");
+
+  button.addEventListener("click", async () => {
+    const issueId = input.value.trim();
+    if (!issueId) {
+      resultDiv.textContent = "Please enter a Request ID.";
+      return;
+    }
+
+    resultDiv.textContent = "Checking...";
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/status/${issueId}`);
+      const data = await res.json();
+
+      if (res.ok) {
+        resultDiv.innerHTML = `
+          <strong>Status:</strong> ${data.status} <br/>
+          <strong>Last updated:</strong> ${data.updatedAt || "N/A"}
+        `;
+      } else {
+        resultDiv.textContent = data.message || "Request not found.";
+      }
+    } catch (err) {
+      console.error(err);
+      resultDiv.textContent = "Network error. Please try again.";
+    }
+  });
+</script>
+</body>
+</html>
