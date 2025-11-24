@@ -1,95 +1,114 @@
+// admin-api/server.js
+// Simple Admin API for CampusFix (uses DynamoDB, no RDS)
+
 const express = require("express");
+const cors = require("cors");
+
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+  DynamoDBDocumentClient,
+  ScanCommand,
+  GetCommand,
+  UpdateCommand,
+} = require("@aws-sdk/lib-dynamodb");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Temporary in-memory data
-let issues = [
-  {
-    issueId: "ISSUE-1",
-    category: "IT",
-    location: "Lab 101",
-    description: "Computer not booting",
-    status: "NEW",
-    updatedAt: new Date().toISOString(),
-  },
-];
+// -------- DynamoDB config --------
+const REGION = process.env.AWS_REGION || "us-east-1";          // change if needed
+const TABLE_NAME = process.env.TABLE_NAME || "CampusFixIssues";
 
-app.use(express.urlencoded({ extended: true }));
+const ddbClient = new DynamoDBClient({ region: REGION });
+const docClient = DynamoDBDocumentClient.from(ddbClient);
+
+// -------- Middleware --------
+app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send(`
-    <html>
-      <head>
-        <title>CampusFix Admin</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; }
-          table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-          th, td { border: 1px solid #ddd; padding: 8px; }
-          th { background: #2563eb; color: white; }
-          form { display: inline-block; }
-          select, button { margin-left: 4px; }
-        </style>
-      </head>
-      <body>
-        <h1>CampusFix - Admin Dashboard</h1>
-        <p>View and update campus service requests.</p>
+// Serve the admin dashboard static files
+app.use(express.static("admin-dashboard"));
 
-        <table>
-          <tr>
-            <th>ID</th>
-            <th>Category</th>
-            <th>Location</th>
-            <th>Description</th>
-            <th>Status</th>
-            <th>Updated At</th>
-            <th>Action</th>
-          </tr>
-          ${issues
-            .map(
-              (issue) => `
-              <tr>
-                <td>${issue.issueId}</td>
-                <td>${issue.category}</td>
-                <td>${issue.location}</td>
-                <td>${issue.description}</td>
-                <td>${issue.status}</td>
-                <td>${issue.updatedAt}</td>
-                <td>
-                  <form method="POST" action="/update">
-                    <input type="hidden" name="issueId" value="${issue.issueId}" />
-                    <select name="status">
-                      <option value="NEW">NEW</option>
-                      <option value="IN_PROGRESS">IN_PROGRESS</option>
-                      <option value="RESOLVED">RESOLVED</option>
-                    </select>
-                    <button type="submit">Update</button>
-                  </form>
-                </td>
-              </tr>
-            `
-            )
-            .join("")}
-        </table>
-      </body>
-    </html>
-  `);
-});
+// -------- API routes --------
 
-app.post("/update", (req, res) => {
-  const { issueId, status } = req.body;
-  const issue = issues.find((i) => i.issueId === issueId);
-  if (issue) {
-    issue.status = status;
-    issue.updatedAt = new Date().toISOString();
+// GET /api/issues  - list all issues
+app.get("/api/issues", async (req, res) => {
+  try {
+    const data = await docClient.send(
+      new ScanCommand({
+        TableName: TABLE_NAME,
+      })
+    );
+
+    // Optional: sort by createdAt descending
+    const items = (data.Items || []).sort((a, b) =>
+      (b.createdAt || "").localeCompare(a.createdAt || "")
+    );
+
+    res.json(items);
+  } catch (err) {
+    console.error("Error getting issues:", err);
+    res.status(500).json({ message: "Error getting issues" });
   }
-  res.redirect("/");
 });
 
-app.get("/api/issues", (req, res) => {
-  res.json(issues);
+// GET /api/issues/:id - get single issue
+app.get("/api/issues/:id", async (req, res) => {
+  const issueId = req.params.id;
+
+  try {
+    const data = await docClient.send(
+      new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { issueId },
+      })
+    );
+
+    if (!data.Item) {
+      return res.status(404).json({ message: "Issue not found" });
+    }
+
+    res.json(data.Item);
+  } catch (err) {
+    console.error("Error getting issue:", err);
+    res.status(500).json({ message: "Error getting issue" });
+  }
 });
 
+// PUT /api/issues/:id  - update status
+app.put("/api/issues/:id", async (req, res) => {
+  const issueId = req.params.id;
+  const { status } = req.body;
+
+  if (!status) {
+    return res.status(400).json({ message: "Status is required" });
+  }
+
+  try {
+    const now = new Date().toISOString();
+
+    await docClient.send(
+      new UpdateCommand({
+        TableName: TABLE_NAME,
+        Key: { issueId },
+        UpdateExpression: "set #s = :s, updatedAt = :u",
+        ExpressionAttributeNames: { "#s": "status" },
+        ExpressionAttributeValues: {
+          ":s": status,
+          ":u": now,
+        },
+        ReturnValues: "ALL_NEW",
+      })
+    );
+
+    res.json({ message: "Status updated", issueId, status });
+  } catch (err) {
+    console.error("Error updating issue:", err);
+    res.status(500).json({ message: "Error updating issue" });
+  }
+});
+
+// -------- Start server --------
 app.listen(PORT, () => {
-  console.log(`Admin API running on http://localhost:${PORT}`);
+  console.log(`CampusFix admin API listening on port ${PORT}`);
 });

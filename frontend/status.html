@@ -2,74 +2,159 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Check Request Status - CampusFix</title>
+  <title>CampusFix - Check Issue Status</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { font-family: Arial, sans-serif; background: #f3f4f6; margin: 0; }
-    header { background: #2563eb; color: #fff; padding: 16px 24px; }
-    main {
-      max-width: 600px; margin: 40px auto; background: #fff;
-      padding: 24px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
     }
-    label { display: block; margin-top: 12px; }
-    input { width: 100%; padding: 8px; margin-top: 4px;
-      border: 1px solid #d1d5db; border-radius: 4px; }
-    button { margin-top: 16px; padding: 10px 16px; border: none;
-      background: #2563eb; color: #fff; border-radius: 4px; cursor: pointer; }
-    .result { margin-top: 16px; }
+
+    .container {
+      background: #ffffff;
+      max-width: 600px;
+      width: 100%;
+      margin: 40px 16px;
+      padding: 24px 28px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      color: #1a3c7c;
+      font-size: 24px;
+    }
+
+    p.subtitle {
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      margin-top: 4px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    button {
+      margin-top: 16px;
+      padding: 10px 18px;
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #155cb8;
+    }
+
+    #statusResult {
+      margin-top: 18px;
+      padding: 10px 12px;
+      border-radius: 4px;
+      background: #f1f3f8;
+      color: #333;
+      min-height: 40px;
+      white-space: pre-line;
+    }
+
+    .footer-link {
+      margin-top: 16px;
+      font-size: 14px;
+    }
+
+    .footer-link a {
+      color: #1a73e8;
+      text-decoration: none;
+    }
+
+    .footer-link a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
-<header>
-  <h1>CampusFix</h1>
-</header>
+  <div class="container">
+    <h1>Check Issue Status</h1>
+    <p class="subtitle">
+      Enter your <strong>Issue ID</strong> from the confirmation message to see the
+      current status of your request.
+    </p>
 
-<main>
-  <h2>Check Request Status</h2>
+    <form id="statusForm" onsubmit="checkStatus(event)">
+      <label for="issueId">Issue ID</label>
+      <input
+        type="text"
+        id="issueId"
+        placeholder="e.g., ISSUE-1763996392986"
+        required
+      />
 
-  <label>
-    Enter Your Request ID
-    <input type="text" id="issueIdInput" />
-  </label>
-  <button id="checkButton">Check Status</button>
+      <button type="submit">Check Status</button>
+    </form>
 
-  <div class="result" id="result"></div>
+    <div id="statusResult">Status will appear here.</div>
 
-  <p><a href="index.html">← Back to Home</a></p>
-</main>
+    <div class="footer-link">
+      Need to report a new issue? <a href="submit.html">Submit an issue</a>
+    </div>
+  </div>
 
-<script>
-  const API_BASE_URL = "https://your-api-id.execute-api.region.amazonaws.com/prod";
+  <script>
+    const API_BASE_URL = "https://a3ld0xuwf5.execute-api.us-east-1.amazonaws.com/prod";
 
-  const input = document.getElementById("issueIdInput");
-  const resultDiv = document.getElementById("result");
-  const button = document.getElementById("checkButton");
+    async function checkStatus(event) {
+      event.preventDefault();
 
-  button.addEventListener("click", async () => {
-    const issueId = input.value.trim();
-    if (!issueId) {
-      resultDiv.textContent = "Please enter a Request ID.";
-      return;
-    }
+      const issueIdInput = document.getElementById("issueId");
+      const issueId = issueIdInput.value.trim();
+      const statusDiv = document.getElementById("statusResult");
 
-    resultDiv.textContent = "Checking...";
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/status/${issueId}`);
-      const data = await res.json();
-
-      if (res.ok) {
-        resultDiv.innerHTML = `
-          <strong>Status:</strong> ${data.status} <br/>
-          <strong>Last updated:</strong> ${data.updatedAt || "N/A"}
-        `;
-      } else {
-        resultDiv.textContent = data.message || "Request not found.";
+      if (!issueId) {
+        statusDiv.textContent = "Please enter your Issue ID.";
+        return;
       }
-    } catch (err) {
-      console.error(err);
-      resultDiv.textContent = "Network error. Please try again.";
+
+      statusDiv.textContent = "Checking status...";
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/status/${encodeURIComponent(issueId)}`);
+        const data = await response.json();
+
+        if (response.ok && data.status) {
+          statusDiv.textContent =
+            `Issue ID: ${data.issueId}\nStatus: ${data.status}\nLast Updated: ${data.updatedAt}`;
+        } else {
+          statusDiv.textContent =
+            (data && data.message) || "Request not found. Please check your Issue ID.";
+        }
+      } catch (err) {
+        console.error(err);
+        statusDiv.textContent =
+          "Error checking status. Please try again or contact support.";
+      }
     }
-  });
-</script>
+  </script>
 </body>
 </html>

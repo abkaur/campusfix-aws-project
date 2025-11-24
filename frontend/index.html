@@ -1,57 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>CampusFix - Campus Service Requests</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f3f4f6;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background: #2563eb;
-      color: #fff;
-      padding: 16px 24px;
-    }
-    main {
-      max-width: 800px;
-      margin: 40px auto;
-      background: #ffffff;
-      padding: 24px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    a.button {
-      display: inline-block;
-      margin: 8px 8px 0 0;
-      padding: 10px 16px;
-      background: #2563eb;
-      color: #fff;
-      text-decoration: none;
-      border-radius: 4px;
-    }
-    a.button.secondary {
-      background: #10b981;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CampusFix – Campus Service Requests</title>
+
+    <!-- Bootstrap 5 CDN -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+        .header {
+            background-color: #0d6efd;
+            color: white;
+            padding: 35px;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        .card-box {
+            transition: 0.2s;
+        }
+        .card-box:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+        }
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            color: #555;
+            font-size: 0.9rem;
+            padding-bottom: 30px;
+        }
+    </style>
 </head>
+
 <body>
-  <header>
-    <h1>CampusFix</h1>
-    <p>Smart Campus Service Request System</p>
-  </header>
 
-  <main>
-    <h2>Welcome</h2>
-    <p>
-      Use CampusFix to report classroom, lab, IT, or facility issues on campus
-      and track their status.
-    </p>
+   <!-- Header -->
+<div style="
+    background-color: #0d6efd;
+    color: white;
+    padding: 40px 20px;
+    text-align: center;
+">
+    <div style="font-size: 2.8rem; font-weight: 700; letter-spacing: 1px;">
+        CampusFix
+    </div>
+    <div style="font-size: 1.2rem; margin-top: 8px; font-weight: 300;">
+        Smart Campus Service Request System
+    </div>
+</div>
 
-    <a class="button" href="submit.html">Submit a New Request</a>
-    <a class="button secondary" href="status.html">Check Request Status</a>
-  </main>
+
+    <!-- Content -->
+    <div class="container mt-5">
+
+        <div class="text-center mb-4">
+            <h2>Welcome</h2>
+            <p class="text-muted">
+                Report classroom, lab, IT, or facility issues and check their status anytime.
+            </p>
+        </div>
+
+        <div class="row justify-content-center">
+            <!-- Submit Issue -->
+            <div class="col-md-5">
+                <div class="card card-box p-4 shadow-sm">
+                    <h4>Submit a New Request</h4>
+                    <p>Report any campus-related issue in less than a minute.</p>
+                    <a href="submit.html" class="btn btn-primary w-100">Submit an Issue</a>
+                </div>
+            </div>
+
+            <!-- Check Status -->
+            <div class="col-md-5">
+                <div class="card card-box p-4 shadow-sm">
+                    <h4>Check Request Status</h4>
+                    <p>Already submitted an issue? Check its current status.</p>
+                    <a href="status.html" class="btn btn-success w-100">Check Status</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        Built for Sheridan Cloud Application Development — Student Portal Side.
+    </footer>
+
 </body>
 </html>

@@ -2,121 +2,198 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Submit Service Request - CampusFix</title>
+  <title>CampusFix - Submit Issue</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { font-family: Arial, sans-serif; background: #f3f4f6; margin: 0; }
-    header { background: #2563eb; color: #fff; padding: 16px 24px; }
-    main {
-      max-width: 800px; margin: 40px auto; background: #fff;
-      padding: 24px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
     }
-    label { display: block; margin-top: 12px; }
-    input, textarea, select {
-      width: 100%; padding: 8px; margin-top: 4px;
-      border: 1px solid #d1d5db; border-radius: 4px;
+
+    .container {
+      background: #ffffff;
+      max-width: 600px;
+      width: 100%;
+      margin: 40px 16px;
+      padding: 24px 28px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
     }
+
+    h1 {
+      margin-top: 0;
+      color: #1a3c7c;
+      font-size: 24px;
+    }
+
+    p.subtitle {
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px 10px;
+      margin-top: 4px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
     button {
-      margin-top: 16px; padding: 10px 16px; border: none;
-      background: #2563eb; color: #fff; border-radius: 4px; cursor: pointer;
+      margin-top: 18px;
+      padding: 10px 18px;
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 15px;
+      cursor: pointer;
     }
-    .message { margin-top: 16px; }
+
+    button:hover {
+      background-color: #155cb8;
+    }
+
+    .message {
+      margin-top: 16px;
+      font-weight: bold;
+    }
+
+    .success {
+      color: #0b7a2a;
+    }
+
+    .error {
+      color: #c62828;
+    }
+
+    .footer-link {
+      margin-top: 16px;
+      font-size: 14px;
+    }
+
+    .footer-link a {
+      color: #1a73e8;
+      text-decoration: none;
+    }
+
+    .footer-link a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
-<header>
-  <h1>CampusFix</h1>
-</header>
+  <div class="container">
+    <h1>CampusFix – Report an Issue</h1>
+    <p class="subtitle">
+      Use this form to report any campus problem (IT, facilities, safety, etc.).
+      You will receive an <strong>Issue ID</strong> to track the status.
+    </p>
 
-<main>
-  <h2>Submit a New Service Request</h2>
+    <form id="issueForm" onsubmit="submitIssue(event)">
+      <label for="name">Your Name</label>
+      <input type="text" id="name" required />
 
-  <form id="requestForm">
-    <label>
-      Your Name
-      <input type="text" name="name" required />
-    </label>
+      <label for="email">Email</label>
+      <input type="email" id="email" required />
 
-    <label>
-      Email
-      <input type="email" name="email" required />
-    </label>
+      <label for="location">Location (e.g., Lab 101, Library, Cafeteria)</label>
+      <input type="text" id="location" required />
 
-    <label>
-      Location (Room, Lab, Building)
-      <input type="text" name="location" required />
-    </label>
-
-    <label>
-      Category
-      <select name="category" required>
-        <option value="">-- Select --</option>
-        <option value="IT">IT / Computer / Network</option>
-        <option value="Classroom">Classroom Equipment</option>
-        <option value="Lab">Lab Equipment</option>
-        <option value="Facility">Facility / Maintenance</option>
+      <label for="category">Category</label>
+      <select id="category" required>
+        <option value="">-- Choose a category --</option>
+        <option value="IT">IT</option>
+        <option value="Facilities">Facilities</option>
+        <option value="Safety">Safety</option>
         <option value="Other">Other</option>
       </select>
-    </label>
 
-    <label>
-      Description
-      <textarea name="description" rows="4" required></textarea>
-    </label>
+      <label for="description">Description</label>
+      <textarea id="description" placeholder="Describe the issue in detail" required></textarea>
 
-    <label>
-      Attach Photo (optional)
-      <input type="file" name="photo" accept="image/*" />
-    </label>
+      <button type="submit">Submit Issue</button>
+    </form>
 
-    <button type="submit">Submit Request</button>
-    <div class="message" id="message"></div>
-  </form>
+    <div id="resultMessage" class="message"></div>
 
-  <p><a href="index.html">← Back to Home</a></p>
-</main>
+    <div class="footer-link">
+      Already submitted? <a href="status.html">Check your issue status</a>
+    </div>
+  </div>
 
-<script>
-  // TODO: replace this with your real API Gateway endpoint later
-  const API_BASE_URL = "https://your-api-id.execute-api.region.amazonaws.com/prod";
+  <script>
+    const API_BASE_URL = "https://a3ld0xuwf5.execute-api.us-east-1.amazonaws.com/prod";
 
-  const form = document.getElementById("requestForm");
-  const messageDiv = document.getElementById("message");
+    async function submitIssue(event) {
+      event.preventDefault(); // stop page reload
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    messageDiv.textContent = "Submitting...";
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const location = document.getElementById("location").value.trim();
+      const category = document.getElementById("category").value;
+      const description = document.getElementById("description").value.trim();
+      const resultDiv = document.getElementById("resultMessage");
 
-    const formData = new FormData(form);
+      resultDiv.textContent = "";
+      resultDiv.className = "message";
 
-    // For now, ignore file upload – we will later use S3 presigned URL.
-    const payload = {
-      name: formData.get("name"),
-      email: formData.get("email"),
-      location: formData.get("location"),
-      category: formData.get("category"),
-      description: formData.get("description")
-    };
+      try {
+        const response = await fetch(`${API_BASE_URL}/submit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            email,
+            location,
+            category,
+            description,
+          }),
+        });
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+        const data = await response.json();
 
-      const data = await res.json();
-      if (res.ok) {
-        messageDiv.textContent =
-          `Request submitted! Your ID is: ${data.issueId}`;
-        form.reset();
-      } else {
-        messageDiv.textContent = `Error: ${data.message || "Something went wrong"}`;
+        if (response.ok && data.issueId) {
+          resultDiv.textContent =
+            "Issue submitted successfully! Your Issue ID is: " + data.issueId;
+          resultDiv.classList.add("success");
+          // Optional: clear form
+          document.getElementById("issueForm").reset();
+        } else {
+          resultDiv.textContent =
+            (data && data.message) || "Something went wrong. Please try again.";
+          resultDiv.classList.add("error");
+        }
+      } catch (err) {
+        console.error(err);
+        resultDiv.textContent =
+          "Network error while submitting the issue. Please try again.";
+        resultDiv.classList.add("error");
       }
-    } catch (err) {
-      console.error(err);
-      messageDiv.textContent = "Network error. Please try again.";
     }
-  });
-</script>
+  </script>
 </body>
 </html>
