@@ -1,31 +1,65 @@
 // lambda/getIssueStatus/index.js
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+  DynamoDBDocumentClient,
+  GetCommand,
+} = require("@aws-sdk/lib-dynamodb");
 
-// Later we will fetch real status from DynamoDB or RDS.
-// For now, return a dummy status.
+const REGION = process.env.AWS_REGION || "ca-central-1";
+const TABLE_NAME = process.env.TABLE_NAME || "CampusFixIssues";
+
+const ddbClient = new DynamoDBClient({ region: REGION });
+const docClient = DynamoDBDocumentClient.from(ddbClient);
 
 exports.handler = async (event) => {
-  console.log("Incoming event:", JSON.stringify(event));
+  try {
+    const issueId = event.pathParameters
+      ? event.pathParameters.issueId
+      : null;
 
-  const issueId = event.pathParameters
-    ? event.pathParameters.issueId
-    : null;
+    if (!issueId) {
+      return {
+        statusCode: 400,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "issueId is required" }),
+      };
+    }
 
-  if (!issueId) {
+    const result = await docClient.send(
+      new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { issueId },
+      })
+    );
+
+    if (!result.Item) {
+      return {
+        statusCode: 404,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "Request not found" }),
+      };
+    }
+
+    const { status, updatedAt } = result.Item;
+
     return {
-      statusCode: 400,
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify({
+        issueId,
+        status,
+        updatedAt,
+      }),
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      statusCode: 500,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "issueId path parameter is required" }),
+      body: JSON.stringify({ message: "Internal server error" }),
     };
   }
-
-  // TODO: look up issueId in DynamoDB/RDS and return real status
-  return {
-    statusCode: 200,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      issueId: issueId,
-      status: "IN_PROGRESS",
-      updatedAt: new Date().toISOString(),
-    }),
-  };
 };

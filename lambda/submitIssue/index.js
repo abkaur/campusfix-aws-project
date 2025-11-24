@@ -1,34 +1,70 @@
 // lambda/submitIssue/index.js
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+  DynamoDBDocumentClient,
+  PutCommand,
+} = require("@aws-sdk/lib-dynamodb");
+const { v4: uuidv4 } = require("uuid");
 
-// In the next phase we will add AWS SDK calls to DynamoDB and S3.
-// For now, we simulate by returning a dummy issueId.
+const REGION = process.env.AWS_REGION || "ca-central-1"; // change if needed
+const TABLE_NAME = process.env.TABLE_NAME || "CampusFixIssues";
+
+const ddbClient = new DynamoDBClient({ region: REGION });
+const docClient = DynamoDBDocumentClient.from(ddbClient);
 
 exports.handler = async (event) => {
-  console.log("Incoming event:", JSON.stringify(event));
+  try {
+    const body = JSON.parse(event.body || "{}");
 
-  // event.body is a JSON string from API Gateway (POST request)
-  const body = JSON.parse(event.body || "{}");
+    const { name, email, location, category, description } = body;
 
-  // Very small validation
-  if (!body.description || !body.location || !body.category) {
+    if (!name || !email || !location || !category || !description) {
+      return {
+        statusCode: 400,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "Missing required fields" }),
+      };
+    }
+
+    const issueId = uuidv4();
+    const now = new Date().toISOString();
+
+    const item = {
+      issueId,
+      name,
+      email,
+      location,
+      category,
+      description,
+      status: "NEW",
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await docClient.send(
+      new PutCommand({
+        TableName: TABLE_NAME,
+        Item: item,
+      })
+    );
+
     return {
-      statusCode: 400,
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify({
+        message: "Issue submitted successfully",
+        issueId,
+      }),
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      statusCode: 500,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "Missing required fields" }),
+      body: JSON.stringify({ message: "Internal server error" }),
     };
   }
-
-  // Temporary: generate a fake issueId (later use DynamoDB + uuid)
-  const issueId = `ISSUE-${Date.now()}`;
-
-  // TODO: save to DynamoDB + upload file to S3 if needed
-
-  return {
-    statusCode: 200,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: "Issue submitted successfully",
-      issueId: issueId,
-    }),
-  };
 };
