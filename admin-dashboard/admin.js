@@ -1,6 +1,6 @@
 // admin-dashboard/admin.js
 // Point this to your EC2 admin API
-const ADMIN_API_BASE = 'http://3.235.140.27:3000';
+const ADMIN_API_BASE = 'http://44.200.192.109:3000';
 
 // Helper to get query param from URL (e.g., ?id=ISSUE-123)
 function getQueryParam(name) {
