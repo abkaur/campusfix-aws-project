@@ -1,114 +1,66 @@
-// admin-api/server.js
-// Simple Admin API for CampusFix (uses DynamoDB, no RDS)
-
-const express = require("express");
-const cors = require("cors");
-
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const {
-  DynamoDBDocumentClient,
-  ScanCommand,
-  GetCommand,
-  UpdateCommand,
-} = require("@aws-sdk/lib-dynamodb");
+const express = require('express');
+const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
-// -------- DynamoDB config --------
-const REGION = process.env.AWS_REGION || "us-east-1";          // change if needed
-const TABLE_NAME = process.env.TABLE_NAME || "CampusFixIssues";
-
-const ddbClient = new DynamoDBClient({ region: REGION });
-const docClient = DynamoDBDocumentClient.from(ddbClient);
-
-// -------- Middleware --------
 app.use(cors());
 app.use(express.json());
 
-// Serve the admin dashboard static files
-app.use(express.static("admin-dashboard"));
+// In-memory mock data (pretend these came from DynamoDB)
+let issues = [
+  {
+    issueId: 'ISSUE-1763997166373',
+    name: 'Abhijot Kaur',
+    email: 'abhijot@example.com',
+    location: 'Library',
+    category: 'Facilities',
+    description: 'Microwave not working!',
+    status: 'NEW',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    issueId: 'ISSUE-1763997114683',
+    name: 'Abhijot Kaur',
+    email: 'abhijot@example.com',
+    location: 'Lab',
+    category: 'IT',
+    description: 'Projector not working',
+    status: 'IN_PROGRESS',
+    updatedAt: new Date().toISOString(),
+  },
+];
 
-// -------- API routes --------
-
-// GET /api/issues  - list all issues
-app.get("/api/issues", async (req, res) => {
-  try {
-    const data = await docClient.send(
-      new ScanCommand({
-        TableName: TABLE_NAME,
-      })
-    );
-
-    // Optional: sort by createdAt descending
-    const items = (data.Items || []).sort((a, b) =>
-      (b.createdAt || "").localeCompare(a.createdAt || "")
-    );
-
-    res.json(items);
-  } catch (err) {
-    console.error("Error getting issues:", err);
-    res.status(500).json({ message: "Error getting issues" });
-  }
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'CampusFix admin API' });
 });
 
-// GET /api/issues/:id - get single issue
-app.get("/api/issues/:id", async (req, res) => {
-  const issueId = req.params.id;
-
-  try {
-    const data = await docClient.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: { issueId },
-      })
-    );
-
-    if (!data.Item) {
-      return res.status(404).json({ message: "Issue not found" });
-    }
-
-    res.json(data.Item);
-  } catch (err) {
-    console.error("Error getting issue:", err);
-    res.status(500).json({ message: "Error getting issue" });
-  }
+// GET /issues  → list all issues
+app.get('/issues', (req, res) => {
+  res.json(issues);
 });
 
-// PUT /api/issues/:id  - update status
-app.put("/api/issues/:id", async (req, res) => {
-  const issueId = req.params.id;
+// PUT /issues/:id  → update status
+app.put('/issues/:id', (req, res) => {
+  const { id } = req.params;
   const { status } = req.body;
 
+  const issue = issues.find((i) => i.issueId === id);
+  if (!issue) {
+    return res.status(404).json({ message: 'Issue not found' });
+  }
+
   if (!status) {
-    return res.status(400).json({ message: "Status is required" });
+    return res.status(400).json({ message: 'Status is required' });
   }
 
-  try {
-    const now = new Date().toISOString();
+  issue.status = status;
+  issue.updatedAt = new Date().toISOString();
 
-    await docClient.send(
-      new UpdateCommand({
-        TableName: TABLE_NAME,
-        Key: { issueId },
-        UpdateExpression: "set #s = :s, updatedAt = :u",
-        ExpressionAttributeNames: { "#s": "status" },
-        ExpressionAttributeValues: {
-          ":s": status,
-          ":u": now,
-        },
-        ReturnValues: "ALL_NEW",
-      })
-    );
-
-    res.json({ message: "Status updated", issueId, status });
-  } catch (err) {
-    console.error("Error updating issue:", err);
-    res.status(500).json({ message: "Error updating issue" });
-  }
+  res.json({ message: 'Status updated', issue });
 });
 
-// -------- Start server --------
 app.listen(PORT, () => {
   console.log(`CampusFix admin API listening on port ${PORT}`);
 });

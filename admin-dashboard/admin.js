@@ -1,4 +1,6 @@
 // admin-dashboard/admin.js
+// Point this to your EC2 admin API
+const ADMIN_API_BASE = 'http://3.235.140.27:3000';
 
 // Helper to get query param from URL (e.g., ?id=ISSUE-123)
 function getQueryParam(name) {
@@ -13,14 +15,17 @@ async function loadIssues() {
   const emptyMsg = document.getElementById("emptyMessage");
   const errorMsg = document.getElementById("errorMessage");
 
-  if (!tableBody) return; // we are not on admin.html
+  // If there is no table, we are not on admin.html
+  if (!tableBody) return;
 
   tableBody.innerHTML = "";
-  emptyMsg.classList.add("d-none");
-  errorMsg.classList.add("d-none");
+  if (emptyMsg) emptyMsg.classList.add("d-none");
+  if (errorMsg) errorMsg.classList.add("d-none");
 
   try {
-    const res = await fetch("/api/issues");
+    // Call the admin API on EC2
+    const res = await fetch(`${ADMIN_API_BASE}/issues`);
+
     if (!res.ok) {
       throw new Error("Network error");
     }
@@ -28,21 +33,22 @@ async function loadIssues() {
     const issues = await res.json();
 
     if (!issues || issues.length === 0) {
-      emptyMsg.classList.remove("d-none");
+      if (emptyMsg) emptyMsg.classList.remove("d-none");
       return;
     }
 
     issues.forEach((issue) => {
       const tr = document.createElement("tr");
 
-      const statusClass = "status-" + (issue.status || "NEW");
+      const statusValue = issue.status || "NEW";
+      const statusClass = "status-" + statusValue;
 
       tr.innerHTML = `
         <td>${issue.issueId}</td>
         <td>${issue.category || ""}</td>
         <td>${issue.location || ""}</td>
         <td>${issue.description || ""}</td>
-        <td><span class="status-badge ${statusClass}">${issue.status}</span></td>
+        <td><span class="status-badge ${statusClass}">${statusValue}</span></td>
         <td>${issue.updatedAt || ""}</td>
         <td>
           <a href="update.html?id=${encodeURIComponent(
@@ -55,7 +61,7 @@ async function loadIssues() {
     });
   } catch (err) {
     console.error("Error loading issues:", err);
-    errorMsg.classList.remove("d-none");
+    if (errorMsg) errorMsg.classList.remove("d-none");
   }
 }
 
@@ -67,48 +73,66 @@ async function initUpdatePage() {
   const form = document.getElementById("updateForm");
   const messageDiv = document.getElementById("message");
 
-  if (!form) return; // not on update.html
+  // If there is no form, we are not on update.html
+  if (!form) return;
 
   if (!issueId) {
-    issueInfo.textContent = "Missing issue ID in URL.";
+    if (issueInfo) {
+      issueInfo.textContent = "Missing issue ID in URL.";
+    }
     form.classList.add("d-none");
     return;
   }
 
   // Load issue details
   try {
-    const res = await fetch(`/api/issues/${encodeURIComponent(issueId)}`);
+    const res = await fetch(
+      `${ADMIN_API_BASE}/issues/${encodeURIComponent(issueId)}`
+    );
     if (!res.ok) throw new Error("Issue not found");
 
     const issue = await res.json();
-    issueInfo.textContent = `Issue ID: ${issue.issueId} | ${issue.category} at ${issue.location}`;
+    if (issueInfo) {
+      issueInfo.textContent = `Issue ID: ${issue.issueId} | ${
+        issue.category || ""
+      } at ${issue.location || ""}`;
+    }
   } catch (err) {
     console.error(err);
-    issueInfo.textContent = "Could not load issue.";
+    if (issueInfo) {
+      issueInfo.textContent = "Could not load issue.";
+    }
   }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    messageDiv.innerHTML = "";
+    if (messageDiv) messageDiv.innerHTML = "";
 
     const status = document.getElementById("status").value;
     if (!status) return;
 
     try {
-      const res = await fetch(`/api/issues/${encodeURIComponent(issueId)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
+      const res = await fetch(
+        `${ADMIN_API_BASE}/issues/${encodeURIComponent(issueId)}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        }
+      );
 
       if (!res.ok) throw new Error("Update failed");
 
-      messageDiv.innerHTML =
-        '<div class="alert alert-success">Status updated successfully.</div>';
+      if (messageDiv) {
+        messageDiv.innerHTML =
+          '<div class="alert alert-success">Status updated successfully.</div>';
+      }
     } catch (err) {
       console.error(err);
-      messageDiv.innerHTML =
-        '<div class="alert alert-danger">Error updating status.</div>';
+      if (messageDiv) {
+        messageDiv.innerHTML =
+          '<div class="alert alert-danger">Error updating status.</div>';
+      }
     }
   });
 }
