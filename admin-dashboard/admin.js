@@ -1,6 +1,6 @@
 // admin-dashboard/admin.js
 // Point this to your EC2 admin API
-const ADMIN_API_BASE = 'http://44.200.180.173:3000';
+const ADMIN_API_BASE = 'http://campusfix-admin-alb-1295074662.us-east-1.elb.amazonaws.com/';
 
 // Helper to get query param from URL (e.g., ?id=ISSUE-123)
 function getQueryParam(name) {
