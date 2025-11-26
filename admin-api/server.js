@@ -4,7 +4,10 @@ const cors = require('cors');
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: '*',              // allow S3 website and any other origin
+  methods: ['GET','PUT','POST','OPTIONS'],
+}));
 app.use(express.json());
 
 // In-memory mock data (pretend these came from DynamoDB)
